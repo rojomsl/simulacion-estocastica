@@ -7,10 +7,9 @@
     
     <!-- Agregar Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
 </head>
 <body class="bg-light">
-<!-- Contenedor para la barra de navegación -->
+    <!-- Contenedor para la barra de navegación -->
     <div id="navbar-placeholder"></div>
 
     <div class="container mt-4">
@@ -19,21 +18,21 @@
                 <h2 class="text-center">Simulación Estocástica</h2>
 
                 <!-- Formulario con Bootstrap -->
-                <form action="corridas.php" method="POST">
+                <form id="simulacionForm">
                     
                     <div class="mb-3">
                         <label for="Corridas" class="form-label">Número de corridas</label>
-                        <input type="number" name="Corridas" id="Corridas" class="form-control" min="1">
+                        <input type="number" id="Corridas" class="form-control" min="1" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="Estados" class="form-label">Número de estados</label>
-                        <input type="number" name="Estados" id="Estados" class="form-control" min="1" oninput="generarMatriz()">
+                        <input type="number" id="Estados" class="form-control" min="1" oninput="generarMatriz()" required>
                     </div>
 
                     <div class="mb-3">
                         <label for="EstadoInicial" class="form-label">Estado inicial</label>
-                        <input type="number" name="EstadoInicial" id="EstadoInicial" class="form-control" min="1">
+                        <input type="number" id="EstadoInicial" class="form-control" min="1" required>
                     </div>
 
                     <!-- Contenedor donde se generará la matriz -->
@@ -44,66 +43,135 @@
                     </div>
 
                     <div class="text-center mt-3">
-                        <button type="submit" class="btn btn-dark btn-block">Enviar</button>
+                        <button type="submit" class="btn btn-dark btn-block">Iniciar Simulación</button>
                     </div>
-
                 </form>
+
+                <hr>
+
+                <!-- Resultados -->
+                <div id="resultados" class="mt-4"></div>
             </div>
         </div>
     </div>
 
-    <!-- Script de Bootstrap -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Agregar jQuery antes de usar la función load() -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
-        //barra de navegación
+        // Cargar la barra de navegación
         $(function() {
             $("#navbar-placeholder").load("./barraNavegacion.html");
         });
-    </script>
 
-    <!-- Script para generar la matriz -->
-    <script>
+        // Generar la matriz de transición
         function generarMatriz() {
-            let numEstados = document.getElementById("Estados").value;
+            let numEstados = parseInt(document.getElementById("Estados").value);
             let contenedor = document.getElementById("formMatriz");
             contenedor.innerHTML = ""; // Limpiar tabla anterior
 
-            if (numEstados < 1) return; // No generar tabla si el número de estados es menor a 1
+            if (numEstados < 1) return;
 
             // Crear la fila de encabezado
             let headerRow = document.createElement("tr");
-            headerRow.innerHTML = `<th class="bg-dark text-white"> # </th>`; // Celda vacía en la esquina superior izquierda
+            headerRow.innerHTML = `<th class="bg-dark text-white"> # </th>`;
             for (let i = 1; i <= numEstados; i++) {
                 headerRow.innerHTML += `<th class="bg-dark text-white">S${i}</th>`;
             }
             contenedor.appendChild(headerRow);
 
-            // Crear la matriz de inputs (n x n)
+            // Crear la matriz de inputs
             for (let i = 1; i <= numEstados; i++) {
                 let fila = document.createElement("tr");
-
-                // Encabezado de la fila (estado origen)
                 fila.innerHTML = `<th class="bg-dark text-white">S${i}</th>`;
-
                 for (let j = 1; j <= numEstados; j++) {
                     let celda = document.createElement("td");
-
                     let input = document.createElement("input");
                     input.type = "number";
                     input.min = "0";
                     input.max = "1";
                     input.step = "0.01";
-                    input.className = "form-control text-center"; // Agrega clases de Bootstrap
-                    input.name = `matrizTransicion[S${i}][S${j}]`;
-
+                    input.className = "form-control text-center";
+                    input.dataset.fila = i;
+                    input.dataset.columna = j;
                     celda.appendChild(input);
                     fila.appendChild(celda);
                 }
                 contenedor.appendChild(fila);
             }
+        }
+
+        // Manejar el envío del formulario
+        document.getElementById("simulacionForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            let noCorridas = parseInt(document.getElementById("Corridas").value);
+            let noEstados = parseInt(document.getElementById("Estados").value);
+            let estadoActual = "S" + document.getElementById("EstadoInicial").value;
+            
+            // Capturar la matriz de transición
+            let matrizTransicion = {};
+            for (let i = 1; i <= noEstados; i++) {
+                matrizTransicion["S" + i] = {};
+                for (let j = 1; j <= noEstados; j++) {
+                    let input = document.querySelector(`input[data-fila="${i}"][data-columna="${j}"]`);
+                    matrizTransicion["S" + i]["S" + j] = parseFloat(input.value) || 0;
+                }
+            }
+
+            // Generar los resultados de la simulación
+            let resultadosHTML = `
+                <h3 class="text-center text-black">Resultados de Simulación</h3>
+                <p class="text-muted text-left">Estado Inicial: <strong>${estadoActual}</strong>
+                    <br>  Número de corridas: <strong>${noCorridas}</strong>
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Iteración</th>
+                                <th>Número Aleatorio</th>
+                                <th>Estado Actual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            for (let a = 1; a <= noCorridas; a++) {
+                let randomNum = Math.random(); // Generar número aleatorio
+                estadoActual = calculaEstadoActual(matrizTransicion[estadoActual], randomNum);
+
+                resultadosHTML += `
+                    <tr>
+                        <td><strong>${a}</strong></td>
+                        <td>${randomNum.toFixed(4)}</td>
+                        <td class="text-primary"><strong>${estadoActual}</strong></td>
+                    </tr>
+                `;
+            }
+
+            resultadosHTML += '</tbody></table></div>';
+            document.getElementById("resultados").innerHTML = resultadosHTML;
+        });
+
+        // Función para calcular el estado actual
+        function calculaEstadoActual(estadosRango, randomNum) {
+            let limiteInferior = 0;
+            let probabilidadesAcumuladas = {};
+
+            for (let estado in estadosRango) {
+                let probabilidad = parseFloat(estadosRango[estado]);
+                let limiteSuperior = limiteInferior + probabilidad;
+                probabilidadesAcumuladas[estado] = limiteSuperior;
+
+                if (randomNum >= limiteInferior && randomNum < limiteSuperior) {
+                    return estado;
+                }
+                limiteInferior = limiteSuperior;
+            }
+
+            return Object.keys(probabilidadesAcumuladas).pop();
         }
     </script>
 
