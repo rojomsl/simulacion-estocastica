@@ -25,6 +25,11 @@
                         <input type="number" id="Corridas" class="form-control" min="1" required>
                     </div>
 
+                <!--<div class="mb-3">
+                        <label for="Iteraciones" class="form-label">Iteraciones máximas</label>
+                        <input type="number" id="Iteraciones" class="form-control" min="1" required>
+                    </div>-->
+
                     <div class="mb-3">
                         <label for="Estados" class="form-label">Número de estados</label>
                         <input type="number" id="Estados" class="form-control" min="1" oninput="generarMatriz()" required>
@@ -33,6 +38,11 @@
                     <div class="mb-3">
                         <label for="EstadoInicial" class="form-label">Estado inicial</label>
                         <input type="number" id="EstadoInicial" class="form-control" min="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="EstadoFinal" class="form-label">Estado final</label>
+                        <input type="number" id="EstadoFinal" class="form-control" min="1" required>
                     </div>
 
                     <!-- Contenedor donde se generará la matriz -->
@@ -68,6 +78,7 @@
         // Generar la matriz de transición
         function generarMatriz() {
             let numEstados = parseInt(document.getElementById("Estados").value);
+
             let contenedor = document.getElementById("formMatriz");
             contenedor.innerHTML = ""; // Limpiar tabla anterior
 
@@ -108,7 +119,13 @@
 
             let noCorridas = parseInt(document.getElementById("Corridas").value);
             let noEstados = parseInt(document.getElementById("Estados").value);
-            let estadoActual = "S" + document.getElementById("EstadoInicial").value;
+            //let numIteraciones = parseInt(document.getElementById("Iteraciones").value);
+            let numIteraciones = 500;
+            let estadoInicial = estadoActual = "S" + document.getElementById("EstadoInicial").value;
+            let estadoFinal = "S" + document.getElementById("EstadoFinal").value;
+         
+            let iteracionesTotales = {};
+            let sumaIteraciones = 0;
             
             // Capturar la matriz de transición
             let matrizTransicion = {};
@@ -120,12 +137,22 @@
                 }
             }
 
+             let resultadosHTML = `<h3 class="text-black">Resultados de Simulación</h3>
+                <p class="text-muted text-left">
+                         Estado inicial: <strong>${estadoActual}</strong>
+                    <br> Estado final: <strong>${estadoFinal}</strong>
+                    <br> Corridas totales: <strong>${noCorridas}</strong>
+                    <br> Promedio de iteraciones: <strong> <span id="promedio"> {PROMEDIO} </span> </strong>
+                </p>`;
+
+            for (let a = 1; a <= noCorridas; a++) {
+
+            estadoActual = estadoInicial;
             // Generar los resultados de la simulación
-            let resultadosHTML = `
-                <h3 class="text-center text-black">Resultados de Simulación</h3>
-                <p class="text-muted text-left">Estado Inicial: <strong>${estadoActual}</strong>
-                    <br>  Número de corridas: <strong>${noCorridas}</strong>
-                </p>
+            resultadosHTML += `
+                
+                <p class="text-muted text-right">Corrida <strong>${a}</strong></p>
+
                 <div class="table-responsive">
                     <table class="table table-bordered text-center">
                         <thead class="table-dark">
@@ -137,8 +164,10 @@
                         </thead>
                         <tbody>
             `;
+            
+    
 
-            for (let a = 1; a <= noCorridas; a++) {
+            for (let i = 1; i <= numIteraciones; i++) {
                 let randomNum = Math.random(); // Generar número aleatorio
                 estadoActual = calculaEstadoActual(matrizTransicion[estadoActual], randomNum);
 
@@ -149,11 +178,22 @@
                         <td class="text-primary"><strong>${estadoActual}</strong></td>
                     </tr>
                 `;
-            }
 
-            resultadosHTML += '</tbody></table></div>';
+                //BanderaEstadoFinal
+                if (estadoActual == estadoFinal) {
+                    iteracionesTotales[a] = i;
+                    sumaIteraciones = i + sumaIteraciones; 
+                    break;
+                }
+
+            }
+        
+            resultadosHTML += `</tbody></table></div>`;
+
             document.getElementById("resultados").innerHTML = resultadosHTML;
-        });
+            document.getElementById("promedio").innerText = sumaIteraciones / a;
+            
+        }console.log(iteracionesTotales);});
 
         // Función para calcular el estado actual
         function calculaEstadoActual(estadosRango, randomNum) {
